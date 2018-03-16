@@ -57,6 +57,7 @@ class Model(object):
             print 'embedded_encoder_inputs', embedded_encoder_inputs # (?, 128), ... , (?, 128) = max_seq_length
             embedded_decoder_inputs = tf.unstack(tf.nn.embedding_lookup(embedding,self.decoder_inputs))
             print 'decoder_inputs', self.decoder_inputs # (32, ?)
+            print 'embedded_decoder_inputs(before unstack)', tf.nn.embedding_lookup(embedding,self.decoder_inputs) # (32, ?, 128)
             print 'embedded_decoder_inputs', embedded_decoder_inputs # (?, 128), ..., (?, 128) = max_seq_length + 2
 
         '''create rnn cell'''
@@ -83,13 +84,17 @@ class Model(object):
         # as it is said above, the decoder will cheat by looking into the groundtruth (only in training)
         # the decoder_outputs records each step's prediction result
         self.decoder_outputs, decoder_states = tf.contrib.legacy_seq2seq.rnn_decoder(embedded_decoder_inputs, self.encoder_states, cell,loop_function=None if self.is_train else loop_function)
+        print 'decoder_outputs(before projection)', self.decoder_outputs  # (?, 128), ..., (?, 128) = max_seq_length + 2
         self.decoder_outputs = [tf.matmul(one,output_projection[0])+output_projection[1] for one in self.decoder_outputs]
+        print 'decoder_outputs', self.decoder_outputs # (?, 4000), ..., (?, 4000) = max_seq_length + 2
 
         '''create loss function'''
         # as an instance, if a sequence is [GO,w1,w2,w3,EOS],then at step 0, the decoder accept 'GO', and try to predict w1, and so on... therefore decoder_truth is decoder_inputs add 1
         decoder_truth = [tf.unstack(self.decoder_inputs)[i+1] for i in xrange(self.max_seq_length+1)]
+        print 'decoder_truth', decoder_truth  # (?,), ..., (?,) == max_seq_length + 1
         # loss can by automatically cauculated with tf.nn.seq2seq.sequence_loss, and it is batch-size-normalized.
         self.loss = tf.contrib.legacy_seq2seq.sequence_loss(self.decoder_outputs[:-1],decoder_truth,tf.unstack(self.decoder_weights)[:-1])
+        print 'decoder_weights', self.decoder_weights[:-1] # (31, ?), 31 == max_seq_length + 1
 
         '''create gradients'''
         params = tf.trainable_variables()
@@ -132,7 +137,7 @@ class Model(object):
             decoder_weights[i,0:(len(seq)+1)]=1.0
         return np.transpose(encoder_inputs), np.transpose(decoder_inputs), encoder_lengths, np.transpose(decoder_weights)
 
-    def step(self,encoder_inputs,decoder_inputs,encoder_lengths,decoder_weights,is_train, session=None):
+    def step(self,encoder_inputs,decoder_inputs,encoder_lengths,decoder_weights,is_train,session=None):
         '''do a uniq step of the model
         when trainning, do parameter updating; when predicting, do not.
         tranpose is necessary to get easy-to-use decoder_outputs of shape [batch_size * max_seq_length * vocab_size]'''
@@ -150,7 +155,7 @@ class Model(object):
                 decoder_outputs,# output
                 loss)# loss
 
-    def fit(self,train_set,validation_set,batch_size, step_per_checkpoint, model_dir):
+    def fit(self,train_set,validation_set,batch_size,step_per_checkpoint,max_step,model_dir):
         '''sklearn-stype fit function: use the data to fit the model'''
         with tf.Session() as session:
             self.initilize(model_dir,session)
@@ -162,6 +167,9 @@ class Model(object):
                 encoder_inputs,decoder_inputs, encoder_lengths, decoder_weights= self.get_batch(train_set,batch_size)
                 _, _, step_loss = self.step(encoder_inputs,decoder_inputs, encoder_lengths, decoder_weights, True ,session)
                 finish = time.time()
+                if self.global_step.eval() >= max_step:
+                    print 'global_step have just reached max_step. done'
+                    break
                 print "global-step %d loss %.5f time %.2f"%(self.global_step.eval(),step_loss,finish-start)
                 if self.global_step.eval()%step_per_checkpoint==0:
                     # at checkpoint we do validation and save.

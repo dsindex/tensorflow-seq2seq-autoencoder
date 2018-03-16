@@ -31,6 +31,7 @@ def main():
     arg('--learning-rate',type=float, default=0.01)
     arg('--batch-size', type=int, default=64)
     arg('--checkpoint-step', type=int, default=100, help='do validation and save after each this many of steps.')
+    arg('--max-step', type=int, default=1000, help='max number of steps')
     args = parser.parse_args()
 
     is_train = True
@@ -75,6 +76,7 @@ def main():
               validation_set,
               args.batch_size,
               args.checkpoint_step,
+              args.max_step,
               args.model_path)
 
 if __name__ == '__main__':
