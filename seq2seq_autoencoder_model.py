@@ -76,9 +76,9 @@ class Model(object):
         # commonly, the seq-to-seq framework works at two modes: when training, it uses the groundtruth w_t as step-t's input
         # but when predicting, it uses a loop_function to pass the previous prediction result to current step as the input
         def loop_function(prev, _):
-            prev = tf.matmul(prev,output_projection[0])+output_projection[1]# get each word's probability
-            prev_symbol = tf.math_ops.argmax(prev, 1)# get the most likely prediction word
-            emb_prev = tf.nn.embedding_lookup(embedding, prev_symbol)# embed the word as the next step's input
+            prev = tf.matmul(prev,output_projection[0])+output_projection[1] # get each word's probability
+            prev_symbol = tf.math_ops.argmax(prev, 1) # get the most likely prediction word
+            emb_prev = tf.nn.embedding_lookup(embedding, prev_symbol) # embed the word as the next step's input
             return emb_prev
         # here we initialize the decoder_rnn with encoder_states and then try to recover the whole sequence by running the rnn
         # as it is said above, the decoder will cheat by looking into the groundtruth (only in training)
@@ -99,7 +99,7 @@ class Model(object):
         '''create gradients'''
         params = tf.trainable_variables()
         gradients = tf.gradients(self.loss, params)
-        clipped_gradients, norm = tf.clip_by_global_norm(gradients,self.max_gradient_norm)# gradient clip is frequently used in rnn
+        clipped_gradients, norm = tf.clip_by_global_norm(gradients,self.max_gradient_norm) # gradient clip is frequently used in rnn
 
         '''create optimizer'''
         opt = tf.train.AdamOptimizer(learning_rate = self.learning_rate)
@@ -151,9 +151,9 @@ class Model(object):
             encoder_states,decoder_outputs,loss,_ = session.run([self.encoder_states,tf.transpose(tf.stack(self.decoder_outputs),[1,0,2]),self.loss,self.update],feed)
         else:
             encoder_states,decoder_outputs,loss = session.run([self.encoder_states,tf.transpose(tf.stack(self.decoder_outputs),[1,0,2]),self.loss],feed)
-        return (encoder_states,# hidden-layer representation we are interested about
-                decoder_outputs,# output
-                loss)# loss
+        return (encoder_states, # hidden-layer representation we are interested about
+                decoder_outputs, # output
+                loss) # loss
 
     def fit(self,train_set,validation_set,batch_size,step_per_checkpoint,max_step,model_dir):
         '''sklearn-stype fit function: use the data to fit the model'''
@@ -175,7 +175,7 @@ class Model(object):
                     # at checkpoint we do validation and save.
                     validation_loss = 0.0
                     validation_batch_size = 10240 # lagger batch_size in validation for efficiency.
-                    for i in xrange(int(np.ceil(1.0*len(validation_set)/validation_batch_size))):# constant permutation of batches in validation for consistency
+                    for i in xrange(int(np.ceil(1.0*len(validation_set)/validation_batch_size))): # constant permutation of batches in validation for consistency
                         start = i*validation_batch_size
                         end = min((i+1)*validation_batch_size,len(validation_set))
                         encoder_inputs,decoder_inputs, encoder_lengths, decoder_weights= self.get_batch(validation_set[start:end],end-start,False)
