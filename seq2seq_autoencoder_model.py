@@ -4,8 +4,6 @@ import sys
 reload(sys)
 sys.setdefaultencoding('utf-8')
 import tensorflow as tf
-from tensorflow.python.ops import rnn, rnn_cell
-from tensorflow.python.framework import dtypes
 import numpy as np
 import data_utils
 import time
@@ -51,19 +49,19 @@ class Model(object):
         '''创建embedding表和embedding之后的输入; create embedding and embedded inputs'''
         with tf.device("/cpu:0"):# embedding lookup only works with cpu
             embedding = tf.get_variable("embedding", [self.vocab_size, self.embedding_size])
-            embedded_encoder_inputs = tf.unpack(tf.nn.embedding_lookup(embedding,self.encoder_inputs))# embedding_lookup function gets a sequence's embedded representation
-            embedded_decoder_inputs = tf.unpack(tf.nn.embedding_lookup(embedding,self.decoder_inputs))
+            embedded_encoder_inputs = tf.unstack(tf.nn.embedding_lookup(embedding,self.encoder_inputs))# embedding_lookup function gets a sequence's embedded representation
+            embedded_decoder_inputs = tf.unstack(tf.nn.embedding_lookup(embedding,self.decoder_inputs))
 
         '''创建rnn神经元; create rnn cell'''
-        cell = tf.nn.rnn_cell.BasicLSTMCell(self.state_size,state_is_tuple=True)
+        cell = tf.contrib.rnn.LSTMCell(num_units=self.state_size, state_is_tuple=True)
         if cell_type =='gru':
-            cell = tf.nn.rnn_cell.GRUCell(self.state_size)
+            cell = tf.contrib.rnn.GRUCell(self.state_size)
         if self.num_layers>1:
-            cell = tf.nn.rnn_cell.MultiRNNCell([cell] * self.num_layers)
+            cell = tf.contrib.MultiRNNCell([cell] * self.num_layers)
 
         '''创建编码结果; create encoder result'''
         # here we encode the sequences to encoder_states, note that the encoder_state of a sequence is [num_layers*state_size] dimentional because it records all layers' states
-        encoder_outputs, self.encoder_states = rnn.rnn(cell, embedded_encoder_inputs,sequence_length = self.encoder_lengths,dtype = dtypes.float32)
+        encoder_outputs, self.encoder_states = tf.contrib.rnn.static_rnn(cell=cell, inputs=embedded_encoder_inputs, sequence_length = self.encoder_lengths, dtype=tf.float32)
 
         '''创建解码结果; create decoder result'''
         # weiredly, we need a loop_function here, because:
@@ -77,14 +75,14 @@ class Model(object):
         # here we initialize the decoder_rnn with encoder_states and then try to recover the whole sequence by running the rnn
         # as it is said above, the decoder will cheat by looking into the groundtruth (only in training)
         # the decoder_outputs records each step's prediction result
-        self.decoder_outputs, decoder_states = tf.nn.seq2seq.rnn_decoder(embedded_decoder_inputs, self.encoder_states, cell,loop_function=None if self.is_train else loop_function)
+        self.decoder_outputs, decoder_states = tf.contrib.legacy_seq2seq.rnn_decoder(embedded_decoder_inputs, self.encoder_states, cell,loop_function=None if self.is_train else loop_function)
         self.decoder_outputs = [tf.matmul(one,output_projection[0])+output_projection[1] for one in self.decoder_outputs]
 
         '''创建损失函数; create loss function'''
         # as an instance, if a sequence is [GO,w1,w2,w3,EOS],then at step 0, the decoder accept 'GO', and try to predict w1, and so on... therefore decoder_truth is decoder_inputs add 1
-        decoder_truth = [tf.unpack(self.decoder_inputs)[i+1] for i in xrange(self.max_seq_length+1)]
+        decoder_truth = [tf.unstack(self.decoder_inputs)[i+1] for i in xrange(self.max_seq_length+1)]
         # loss can by automatically cauculated with tf.nn.seq2seq.sequence_loss, and it is batch-size-normalized.
-        self.loss = tf.nn.seq2seq.sequence_loss(self.decoder_outputs[:-1],decoder_truth,tf.unpack(self.decoder_weights)[:-1])
+        self.loss = tf.contrib.legacy_seq2seq.sequence_loss(self.decoder_outputs[:-1],decoder_truth,tf.unstack(self.decoder_weights)[:-1])
 
         '''创建梯度; create gradients'''
         params = tf.trainable_variables()
@@ -107,7 +105,7 @@ class Model(object):
             self.saver.restore(session, ckpt.model_checkpoint_path)
         else:
             print("Creating model with fresh parameters.")
-            session.run(tf.initialize_all_variables())
+            session.run(tf.global_variables_initializer())
 
     def get_batch(self,data_set,batch_size,random=True):
         '''get a batch of data from a data_set and do all needed preprocess
@@ -138,9 +136,9 @@ class Model(object):
         feed[self.decoder_weights] = decoder_weights
         self.is_train = is_train
         if is_train:
-            encoder_states,decoder_outputs,loss,_ = session.run([self.encoder_states,tf.transpose(tf.pack(self.decoder_outputs),[1,0,2]),self.loss,self.update],feed)
+            encoder_states,decoder_outputs,loss,_ = session.run([self.encoder_states,tf.transpose(tf.stack(self.decoder_outputs),[1,0,2]),self.loss,self.update],feed)
         else:
-            encoder_states,decoder_outputs,loss = session.run([self.encoder_states,tf.transpose(tf.pack(self.decoder_outputs),[1,0,2]),self.loss],feed)
+            encoder_states,decoder_outputs,loss = session.run([self.encoder_states,tf.transpose(tf.stack(self.decoder_outputs),[1,0,2]),self.loss],feed)
         return (encoder_states,# hidden-layer representation we are interested about
                 decoder_outputs,# output
                 loss)# loss
