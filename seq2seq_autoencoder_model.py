@@ -10,7 +10,7 @@ import time
 import os
 
 class Model(object):
-    def __init__(self,vocab_size,embedding_size, state_size, num_layers, num_samples, max_seq_length,max_gradient_norm, cell_type,optimizer, learning_rate):
+    def __init__(self,vocab_size,embedding_size, state_size, num_layers, num_samples, max_seq_length,max_gradient_norm, cell_type,optimizer, learning_rate, is_train):
         self.vocab_size = vocab_size
         self.embedding_size = embedding_size
         self.state_size = state_size
@@ -21,22 +21,23 @@ class Model(object):
         self.num_samples = num_samples
         self.optimizer = optimizer
         self.learning_rate = learning_rate
-        self.is_train = True # false for test
+        self.is_train = is_train
         self.global_step = tf.Variable(0, trainable=False)
 
-        '''创建输入、目标变量; create encoder and decoder variables'''
-        self.encoder_inputs = tf.placeholder(tf.int32, [self.max_seq_length, None])# [max_seq_length * batch_size] tensor representing input sequences, None for variable batch_size
+        '''create encoder and decoder variables'''
+        self.encoder_inputs = tf.placeholder(tf.int32, [self.max_seq_length, None]) # [max_seq_length * batch_size] tensor representing input sequences, None for variable batch_size
         self.encoder_lengths = tf.placeholder(tf.int32, [None]) # [batch_size] tensor recording each sequence's length, used by rnn cell to decide when to finish computing
-        self.decoder_inputs = tf.placeholder(tf.int32, [self.max_seq_length+2,None])# decoder_inputs add the 'GO' and 'EOS' symbol, so 2 more time steps
-        self.decoder_weights = tf.placeholder(tf.float32,[self.max_seq_length+2,None])# for the padded parts in a sequence, the weights are 0.0, which means we don't care about their loss
+        self.decoder_inputs = tf.placeholder(tf.int32, [self.max_seq_length+2,None]) # decoder_inputs add the 'GO' and 'EOS' symbol, so 2 more time steps
+        self.decoder_weights = tf.placeholder(tf.float32,[self.max_seq_length+2,None]) # for the padded parts in a sequence, the weights are 0.0, which means we don't care about their loss
 
-        '''创建输出映射; create output projection variables'''
+        '''create output projection variables'''
         # what is output projection?
-        # decoder rnn output at step t (lets call it o_t) is [state_size] dimentional; o_t*w+b is [vocab_size] dimentional, so the decoder generate words by w_t = argmax_w{o_t*w+b}
+        # decoder rnn output at step t (lets call it o_t)  is [state_size] dimentional; o_t*w+b is [vocab_size] dimentional, so the decoder generate words by w_t = argmax_w{o_t*w+b}
         w = tf.get_variable("proj_w", [self.state_size, self.vocab_size])
         w_t = tf.transpose(w)
         b = tf.get_variable("proj_b", [self.vocab_size])
         output_projection = (w, b)
+        ''' NOT USED
         # what is softmax_loss_function?
         # an in-complete softmax model which considers only [num_samples] classes to simplify loss calculation. you don't need to care about the details because the tf.nn.sampled_softmax_loss function do it automatically
         softmax_loss_function = None
@@ -45,25 +46,31 @@ class Model(object):
                 labels = tf.reshape(labels, [-1, 1])
                 return tf.nn.sampled_softmax_loss(weights=w_t, biases = b, inputs = inputs, labels = labels, num_sampled = self.num_samples,num_classes = self.vocab_size)
             softmax_loss_function = sampled_loss
+        '''
 
-        '''创建embedding表和embedding之后的输入; create embedding and embedded inputs'''
-        with tf.device("/cpu:0"):# embedding lookup only works with cpu
+        '''create embedding and embedded inputs'''
+        with tf.device("/cpu:0"): # embedding lookup only works with cpu
             embedding = tf.get_variable("embedding", [self.vocab_size, self.embedding_size])
-            embedded_encoder_inputs = tf.unstack(tf.nn.embedding_lookup(embedding,self.encoder_inputs))# embedding_lookup function gets a sequence's embedded representation
+            embedded_encoder_inputs = tf.unstack(tf.nn.embedding_lookup(embedding,self.encoder_inputs)) # embedding_lookup function gets a sequence's embedded representation
+            print 'encoder_inputs', self.encoder_inputs # (30, ?)
+            print 'embedded_encoder_inputs(before unstack)', tf.nn.embedding_lookup(embedding,self.encoder_inputs) # (30, ?, 128)
+            print 'embedded_encoder_inputs', embedded_encoder_inputs # (?, 128), ... , (?, 128) = max_seq_length
             embedded_decoder_inputs = tf.unstack(tf.nn.embedding_lookup(embedding,self.decoder_inputs))
+            print 'decoder_inputs', self.decoder_inputs # (32, ?)
+            print 'embedded_decoder_inputs', embedded_decoder_inputs # (?, 128), ..., (?, 128) = max_seq_length + 2
 
-        '''创建rnn神经元; create rnn cell'''
+        '''create rnn cell'''
         cell = tf.contrib.rnn.LSTMCell(num_units=self.state_size, state_is_tuple=True)
         if cell_type =='gru':
             cell = tf.contrib.rnn.GRUCell(self.state_size)
         if self.num_layers>1:
             cell = tf.contrib.MultiRNNCell([cell] * self.num_layers)
 
-        '''创建编码结果; create encoder result'''
+        '''create encoder result'''
         # here we encode the sequences to encoder_states, note that the encoder_state of a sequence is [num_layers*state_size] dimentional because it records all layers' states
         encoder_outputs, self.encoder_states = tf.contrib.rnn.static_rnn(cell=cell, inputs=embedded_encoder_inputs, sequence_length = self.encoder_lengths, dtype=tf.float32)
 
-        '''创建解码结果; create decoder result'''
+        '''create decoder result'''
         # weiredly, we need a loop_function here, because:
         # commonly, the seq-to-seq framework works at two modes: when training, it uses the groundtruth w_t as step-t's input
         # but when predicting, it uses a loop_function to pass the previous prediction result to current step as the input
@@ -78,24 +85,24 @@ class Model(object):
         self.decoder_outputs, decoder_states = tf.contrib.legacy_seq2seq.rnn_decoder(embedded_decoder_inputs, self.encoder_states, cell,loop_function=None if self.is_train else loop_function)
         self.decoder_outputs = [tf.matmul(one,output_projection[0])+output_projection[1] for one in self.decoder_outputs]
 
-        '''创建损失函数; create loss function'''
+        '''create loss function'''
         # as an instance, if a sequence is [GO,w1,w2,w3,EOS],then at step 0, the decoder accept 'GO', and try to predict w1, and so on... therefore decoder_truth is decoder_inputs add 1
         decoder_truth = [tf.unstack(self.decoder_inputs)[i+1] for i in xrange(self.max_seq_length+1)]
         # loss can by automatically cauculated with tf.nn.seq2seq.sequence_loss, and it is batch-size-normalized.
         self.loss = tf.contrib.legacy_seq2seq.sequence_loss(self.decoder_outputs[:-1],decoder_truth,tf.unstack(self.decoder_weights)[:-1])
 
-        '''创建梯度; create gradients'''
+        '''create gradients'''
         params = tf.trainable_variables()
         gradients = tf.gradients(self.loss, params)
         clipped_gradients, norm = tf.clip_by_global_norm(gradients,self.max_gradient_norm)# gradient clip is frequently used in rnn
 
-        '''创建优化算法; create optimizer'''
+        '''create optimizer'''
         opt = tf.train.AdamOptimizer(learning_rate = self.learning_rate)
         if self.optimizer == 'adadelta':
             opt = tf.train.AdadeltaOptimizer(learning_rate = self.learning_rate)
         self.update = opt.apply_gradients(zip(clipped_gradients, params), global_step=self.global_step)
 
-        '''创建保存器; create saver'''
+        '''create saver'''
         self.saver = tf.train.Saver(tf.all_variables(),max_to_keep = 10)
 
     def initilize(self,model_dir,session=None):

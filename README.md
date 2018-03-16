@@ -1,5 +1,9 @@
-# forked version of tensorflow-seq2seq-autoencoder
+# forked version of tensorflow-seq2seq-autoencoder for study
   - modified for tensorflow 1.4.0
+  - additional comments
+  ![seq2seq_autoencoder](https://raw.githubusercontent.com/dsindex/blog/master/images/seq2seq_autoencoder.jpeg)
+
+----
 
 # seqseq-autoencoder
 This is a simple seqseq-autoencoder example of tensorflow-0.9
