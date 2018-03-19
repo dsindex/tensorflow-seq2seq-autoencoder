@@ -2,6 +2,14 @@
   - modified for tensorflow 1.4.0
   - additional comments
   ![seq2seq_autoencoder](https://raw.githubusercontent.com/dsindex/blog/master/images/seq2seq_autoencoder.jpeg)
+  - train
+  ```
+  * for example, if we have a tokenized corpus `news-sent-morph-100000.txt` :
+  $ CUDA_VISIBLE_DEVICES=7 python train.py --data-path data/news-sent-morph-100000.txt --model-path train --max-step=1000 --vocab-size=10000
+  ```
+  - inference
+  ```
+  ```
 
 ----
 
