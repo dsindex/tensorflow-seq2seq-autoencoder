@@ -1,7 +1,9 @@
 # forked version of tensorflow-seq2seq-autoencoder for study
-  - modified for tensorflow 1.4.0
-  - additional comments
-  ![seq2seq_autoencoder](https://raw.githubusercontent.com/dsindex/blog/master/images/seq2seq_autoencoder.jpeg)
+  - modified
+    - modified for tensorflow 1.4.0
+    - add inference.py
+    - additional comments
+    ![seq2seq_autoencoder](https://raw.githubusercontent.com/dsindex/blog/master/images/seq2seq_autoencoder.jpeg)
   - train
   ```
   * for example, if we have a tokenized corpus `news-sent-morph-100000.txt`.
