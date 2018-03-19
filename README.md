@@ -7,7 +7,8 @@
   - train
   ```
   * for example, if we have a tokenized corpus `news-sent-morph-100000.txt`.
-  * `news-sent-morph-100000.txt` looks like :
+  * `news-sent-morph-100000.txt` looks like(morph-based tokenized string) :
+     ...
      슬기 롭다 게 대처 하다 ㄹ 수 있다 는 사람 만 이 승리 하다 ㄹ 수 있다 겠 다
      3 , 7 , 10 월 생 자신 을 따르다 ㄴ다고 무조건 만나다 거나 경거망동 하다 지 말다 라
      한순간 의 실수 로 후회 하다 ㄹ 일 생기다 ㄴ다
