@@ -77,7 +77,7 @@ class Model(object):
         # but when predicting, it uses a loop_function to pass the previous prediction result to current step as the input
         def loop_function(prev, _):
             prev = tf.matmul(prev,output_projection[0])+output_projection[1] # get each word's probability
-            prev_symbol = tf.math_ops.argmax(prev, 1) # get the most likely prediction word
+            prev_symbol = tf.argmax(prev, 1) # get the most likely prediction word
             emb_prev = tf.nn.embedding_lookup(embedding, prev_symbol) # embed the word as the next step's input
             return emb_prev
         # here we initialize the decoder_rnn with encoder_states and then try to recover the whole sequence by running the rnn
@@ -108,7 +108,7 @@ class Model(object):
         self.update = opt.apply_gradients(zip(clipped_gradients, params), global_step=self.global_step)
 
         '''create saver'''
-        self.saver = tf.train.Saver(tf.all_variables(),max_to_keep = 10)
+        self.saver = tf.train.Saver(tf.global_variables(),max_to_keep = 10)
 
     def initilize(self,model_dir,session=None):
         ckpt = tf.train.get_checkpoint_state(model_dir)
@@ -185,3 +185,16 @@ class Model(object):
                     # save
                     self.saver.save(session, os.path.join(model_dir,'checkpoint'), global_step=self.global_step)
                 sys.stdout.flush()
+
+    def inference(self,test_set,batch_size,session):
+        '''inference function'''
+        start = time.time()
+        test_loss = 0.0
+        test_batch_size = batch_size
+        for i in xrange(int(np.ceil(1.0*len(test_set)/test_batch_size))):
+            start = i*test_batch_size
+            end = min((i+1)*test_batch_size,len(test_set))
+            encoder_inputs,decoder_inputs, encoder_lengths, decoder_weights= self.get_batch(test_set[start:end],end-start,False)
+            _, _, step_loss = self.step(encoder_inputs,decoder_inputs, encoder_lengths, decoder_weights, False ,session)
+            test_loss+=step_loss*(end-start)/len(test_set)
+        print "test-loss %.5f"%(test_loss)

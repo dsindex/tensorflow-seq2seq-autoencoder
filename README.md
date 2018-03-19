@@ -4,11 +4,19 @@
   ![seq2seq_autoencoder](https://raw.githubusercontent.com/dsindex/blog/master/images/seq2seq_autoencoder.jpeg)
   - train
   ```
-  * for example, if we have a tokenized corpus `news-sent-morph-100000.txt` :
+  * for example, if we have a tokenized corpus `news-sent-morph-100000.txt`.
+  * `news-sent-morph-100000.txt` looks like :
+     슬기 롭다 게 대처 하다 ㄹ 수 있다 는 사람 만 이 승리 하다 ㄹ 수 있다 겠 다
+     3 , 7 , 10 월 생 자신 을 따르다 ㄴ다고 무조건 만나다 거나 경거망동 하다 지 말다 라
+     한순간 의 실수 로 후회 하다 ㄹ 일 생기다 ㄴ다
+     북 , 동쪽 사람 조심 ▶ 소띠 = 친지 간 에 덕이 없다 어 베풀다 고도 원망 만 받다 는다
+     ...
+
   $ CUDA_VISIBLE_DEVICES=7 python train.py --data-path data/news-sent-morph-100000.txt --model-path train --max-step=1000 --vocab-size=10000
   ```
   - inference
   ```
+  $ CUDA_VISIBLE_DEVICES=7 python inference.py --model-path train --vocab-path data/news-sent-morph-100000.txt.vocab10000.txt --vocab-size=10000 --test-path data/news-sent-morph-100.txt
   ```
 
 ----
