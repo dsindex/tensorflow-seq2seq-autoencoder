@@ -2,9 +2,11 @@
   - modified
     - modify for tensorflow 1.4.0
     - add inference.py
-  - train
+  - setting and data preparation
   ```
-  * for example, if we have a tokenized corpus `news-sent-morph-100000.txt`.
+  $ export CUDA_VISIBLE_DEVICES=7
+
+  * a tokenized corpus `news-sent-morph-100000.txt` for instance.
   * `news-sent-morph-100000.txt` looks like(morph-based tokenized string) :
      ...
      슬기 롭다 게 대처 하다 ㄹ 수 있다 는 사람 만 이 승리 하다 ㄹ 수 있다 겠 다
@@ -13,11 +15,14 @@
      북 , 동쪽 사람 조심 ▶ 소띠 = 친지 간 에 덕이 없다 어 베풀다 고도 원망 만 받다 는다
      ...
 
-  $ CUDA_VISIBLE_DEVICES=7 python train.py --data-path data/news-sent-morph-100000.txt --model-path train --max-step=1000 --vocab-size=10000
+  ```
+  - train
+  ```
+  $ python train.py --data-path data/news-sent-morph-100000.txt --model-path train --max-step=1000 --vocab-size=10000
   ```
   - inference
   ```
-  $ CUDA_VISIBLE_DEVICES=7 python inference.py --model-path train --vocab-path data/news-sent-morph-100000.txt.vocab10000.txt --vocab-size=10000 < data/news-sent-morph-100.txt
+  $ python inference.py --model-path train --vocab-path data/news-sent-morph-100000.txt.vocab10000.txt --vocab-size=10000 < data/news-sent-morph-100.txt
   line:
   박 씨 가 관심 있다 는 거 ㄴ 각양각색 의 펜 과 테이프 , 스티커 등 이 다
   test_set:
