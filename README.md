@@ -1,9 +1,13 @@
-# forked version of tensorflow-seq2seq-autoencoder for study
-  - modified
-    - modify for tensorflow 1.4.0
-    - add inference.py
-  - setting and data preparation
-  ```
+forked version of tensorflow-seq2seq-autoencoder for study
+---
+
+### modified
+  - modify for tensorflow 1.4.0
+  - add inference.py
+
+### setting and data preparation
+
+```
   $ export CUDA_VISIBLE_DEVICES=7
 
   * a tokenized corpus `news-sent-morph-100000.txt` for instance.
@@ -15,13 +19,17 @@
      북 , 동쪽 사람 조심 ▶ 소띠 = 친지 간 에 덕이 없다 어 베풀다 고도 원망 만 받다 는다
      ...
 
-  ```
-  - train
-  ```
+```
+
+### train
+
+```
   $ python train.py --data-path data/news-sent-morph-100000.txt --model-path train --max-step=1000 --vocab-size=10000
-  ```
-  - inference
-  ```
+```
+
+### inference
+
+```
   $ python inference.py --model-path train --vocab-path data/news-sent-morph-100000.txt.vocab10000.txt --vocab-size=10000 < data/news-sent-morph-100.txt
   line:
   박 씨 가 관심 있다 는 거 ㄴ 각양각색 의 펜 과 테이프 , 스티커 등 이 다
@@ -42,9 +50,11 @@
   out to sentence:
   불복 불복 구단 유하 죄송 자동차 김인오 넘어가다 작용 자동차 자동차 자동차 빔 회원 회원 회원 회원 회원 회원 회원 회원 회원 밑돌다 터널 알렉스 알렉스 알렉스 알렉스 알렉스 알렉스 알렉스 알렉스
   ...
-  ```
-  - additional comments
-  ![seq2seq_autoencoder](https://raw.githubusercontent.com/dsindex/blog/master/images/seq2seq_autoencoder.jpeg)
+```
+
+### additional comments
+
+![seq2seq_autoencoder](https://raw.githubusercontent.com/dsindex/blog/master/images/seq2seq_autoencoder.jpeg)
 
 ----
 
