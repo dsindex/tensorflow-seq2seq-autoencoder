@@ -10,7 +10,7 @@ import time
 import os
 
 class Model(object):
-    def __init__(self,vocab_size,embedding_size, state_size, num_layers, num_samples, max_seq_length,max_gradient_norm, cell_type,optimizer, learning_rate, is_train):
+    def __init__(self,vocab_size,embedding_size, state_size, num_layers, num_samples, max_seq_length,max_gradient_norm, cell_type,optimizer, learning_rate, verbose, is_train):
         self.vocab_size = vocab_size
         self.embedding_size = embedding_size
         self.state_size = state_size
@@ -21,6 +21,7 @@ class Model(object):
         self.num_samples = num_samples
         self.optimizer = optimizer
         self.learning_rate = learning_rate
+        self.verbose = verbose
         self.is_train = is_train
         self.global_step = tf.Variable(0, trainable=False)
 
@@ -52,13 +53,15 @@ class Model(object):
         with tf.device("/cpu:0"): # embedding lookup only works with cpu
             embedding = tf.get_variable("embedding", [self.vocab_size, self.embedding_size])
             embedded_encoder_inputs = tf.unstack(tf.nn.embedding_lookup(embedding,self.encoder_inputs)) # embedding_lookup function gets a sequence's embedded representation
-            print 'encoder_inputs', self.encoder_inputs # (30, ?)
-            print 'embedded_encoder_inputs(before unstack)', tf.nn.embedding_lookup(embedding,self.encoder_inputs) # (30, ?, 128)
-            print 'embedded_encoder_inputs', embedded_encoder_inputs # (?, 128), ... , (?, 128) = max_seq_length
+            if self.verbose:
+                print 'encoder_inputs', self.encoder_inputs # (30, ?)
+                print 'embedded_encoder_inputs(before unstack)', tf.nn.embedding_lookup(embedding,self.encoder_inputs) # (30, ?, 128)
+                print 'embedded_encoder_inputs', embedded_encoder_inputs # (?, 128), ... , (?, 128) = max_seq_length
             embedded_decoder_inputs = tf.unstack(tf.nn.embedding_lookup(embedding,self.decoder_inputs))
-            print 'decoder_inputs', self.decoder_inputs # (32, ?)
-            print 'embedded_decoder_inputs(before unstack)', tf.nn.embedding_lookup(embedding,self.decoder_inputs) # (32, ?, 128)
-            print 'embedded_decoder_inputs', embedded_decoder_inputs # (?, 128), ..., (?, 128) = max_seq_length + 2
+            if self.verbose:
+                print 'decoder_inputs', self.decoder_inputs # (32, ?)
+                print 'embedded_decoder_inputs(before unstack)', tf.nn.embedding_lookup(embedding,self.decoder_inputs) # (32, ?, 128)
+                print 'embedded_decoder_inputs', embedded_decoder_inputs # (?, 128), ..., (?, 128) = max_seq_length + 2
 
         '''create rnn cell'''
         cell = tf.contrib.rnn.LSTMCell(num_units=self.state_size, state_is_tuple=True)
@@ -84,17 +87,21 @@ class Model(object):
         # as it is said above, the decoder will cheat by looking into the groundtruth (only in training)
         # the decoder_outputs records each step's prediction result
         self.decoder_outputs, decoder_states = tf.contrib.legacy_seq2seq.rnn_decoder(embedded_decoder_inputs, self.encoder_states, cell,loop_function=None if self.is_train else loop_function)
-        print 'decoder_outputs(before projection)', self.decoder_outputs  # (?, 128), ..., (?, 128) = max_seq_length + 2
+        if self.verbose:
+            print 'decoder_outputs(before projection)', self.decoder_outputs  # (?, 128), ..., (?, 128) = max_seq_length + 2
         self.decoder_outputs = [tf.matmul(one,output_projection[0])+output_projection[1] for one in self.decoder_outputs]
-        print 'decoder_outputs', self.decoder_outputs # (?, 4000), ..., (?, 4000) = max_seq_length + 2
+        if self.verbose:
+            print 'decoder_outputs', self.decoder_outputs # (?, 4000), ..., (?, 4000) = max_seq_length + 2
 
         '''create loss function'''
         # as an instance, if a sequence is [GO,w1,w2,w3,EOS],then at step 0, the decoder accept 'GO', and try to predict w1, and so on... therefore decoder_truth is decoder_inputs add 1
         decoder_truth = [tf.unstack(self.decoder_inputs)[i+1] for i in xrange(self.max_seq_length+1)]
-        print 'decoder_truth', decoder_truth  # (?,), ..., (?,) == max_seq_length + 1
+        if self.verbose:
+            print 'decoder_truth', decoder_truth  # (?,), ..., (?,) == max_seq_length + 1
         # loss can by automatically cauculated with tf.nn.seq2seq.sequence_loss, and it is batch-size-normalized.
         self.loss = tf.contrib.legacy_seq2seq.sequence_loss(self.decoder_outputs[:-1],decoder_truth,tf.unstack(self.decoder_weights)[:-1])
-        print 'decoder_weights', self.decoder_weights[:-1] # (31, ?), 31 == max_seq_length + 1
+        if self.verbose:
+            print 'decoder_weights', self.decoder_weights[:-1] # (31, ?), 31 == max_seq_length + 1
 
         '''create gradients'''
         params = tf.trainable_variables()
@@ -189,12 +196,19 @@ class Model(object):
     def inference(self,test_set,batch_size,session):
         '''inference function'''
         start = time.time()
+        encoder_states_array = []
+        decoder_outputs_array = []
         test_loss = 0.0
         test_batch_size = batch_size
         for i in xrange(int(np.ceil(1.0*len(test_set)/test_batch_size))):
             start = i*test_batch_size
             end = min((i+1)*test_batch_size,len(test_set))
             encoder_inputs,decoder_inputs, encoder_lengths, decoder_weights= self.get_batch(test_set[start:end],end-start,False)
-            _, _, step_loss = self.step(encoder_inputs,decoder_inputs, encoder_lengths, decoder_weights, False ,session)
+            encoder_states, decoder_outputs, step_loss = self.step(encoder_inputs,decoder_inputs, encoder_lengths, decoder_weights, False ,session)
+            encoder_states_array.append(encoder_states)
+            decoder_outputs_array.append(decoder_outputs)
             test_loss+=step_loss*(end-start)/len(test_set)
-        print "test-loss %.5f"%(test_loss)
+        finish = time.time()
+        if self.verbose:
+            print 'duration time %.2f' % (finish-start)
+        return (encoder_states_array, decoder_outputs_array, test_loss)

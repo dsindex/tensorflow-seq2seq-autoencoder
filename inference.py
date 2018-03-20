@@ -10,10 +10,12 @@ import data_utils
 from tensorflow.python.platform import gfile
 import seq2seq_autoencoder_model
 import os
+import time
 
 def main():
     parser = argparse.ArgumentParser()
     arg = parser.add_argument
+    arg('--verbose', help='verbose mode')
     arg('--model-path',help='path to saved model')
     arg('--vocab-path',help='path to saved vocab')
     arg('--max-seq-length', type=int, default=30,help='the longest sequence length supported by the model, trainning data longer than this will be omitted, testing data longer than this will cause error')
@@ -26,24 +28,13 @@ def main():
     arg('--max-gradient-norm', type=float, default=5.0, help='gradient norm is commonly set as 5.0 or 15.0')
     arg('--optimizer',default='adam', help='Optimizer: adam, adadelta')
     arg('--learning-rate',type=float, default=0.01)
-    arg('--batch-size', type=int, default=64)
-    arg('--test-path',help='path to test data file')
     args = parser.parse_args()
-
-    is_train = False
 
     '''read vocab'''
     dictionary, reverse_dictionary = data_utils.initialize_vocabulary(args.vocab_path)
-
-    '''prepare test data'''
-    test_set = []
-    with gfile.GFile(args.test_path, mode='rb') as test_file:
-        for line in test_file:
-            ids = data_utils.sentence_to_token_ids(line, dictionary)
-            test_set.append(ids)
-    test_set = [one for one in test_set if len(one)<=args.max_seq_length] 
     
     '''create model'''
+    is_train = False
     model = seq2seq_autoencoder_model.Model(args.vocab_size,
                                             args.embedding_size,
                                             args.state_size,
@@ -54,14 +45,48 @@ def main():
                                             args.cell,
                                             args.optimizer,
                                             args.learning_rate,
+                                            args.verbose,
                                             is_train)
 
-    '''restore model and inference'''
+    '''restore model and do inference'''
     if not gfile.Exists(args.model_path):
         raise ValueError('Model dir path %s not found.', args.model_path)
     with tf.Session() as session:
+        # restore model
         model.initilize(args.model_path, session)
-        model.inference(test_set, args.batch_size, session)
+        number_of_sent = 0
+        while 1:
+            try:
+                line = sys.stdin.readline()
+            except KeyboardInterrupt:
+                break
+            if not line:
+                break
+            line = line.strip()
+            if not line : continue
+            start_time = time.time()
+            # prepare data
+            test_set = []
+            ids = data_utils.sentence_to_token_ids(line, dictionary)
+            if len(ids) > args.max_seq_length:
+              ids = ids[:args.max_seq_length]
+            test_set.append(ids)
+            print 'test_set:'
+            print test_set
+            batch_size = 1
+            # do inference
+            encoder_states_array, decoder_outputs_array, test_loss = model.inference(test_set, batch_size, session)
+            print 'encoder_states'
+            print encoder_states_array[0]
+            print 'decoder_outputs'
+            print decoder_outputs_array[0]
+            duration_time = time.time() - start_time
+            out = 'duration_time = ' + str(duration_time) + ' sec'
+            sys.stderr.write(out + '\n')
+            break
+            number_of_sent += 1
+        sys.stderr.write("number_of_sent = %d\n" % (number_of_sent))
+
 
 if __name__ == '__main__':
     main()

@@ -19,7 +19,7 @@
   ```
   - inference
   ```
-  $ CUDA_VISIBLE_DEVICES=7 python inference.py --model-path train --vocab-path data/news-sent-morph-100000.txt.vocab10000.txt --vocab-size=10000 --test-path data/news-sent-morph-100.txt
+  $ CUDA_VISIBLE_DEVICES=7 python inference.py --model-path train --vocab-path data/news-sent-morph-100000.txt.vocab10000.txt --vocab-size=10000 < data/news-sent-morph-100.txt
   ```
 
 ----

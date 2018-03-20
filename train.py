@@ -14,6 +14,7 @@ import os
 def main():
     parser = argparse.ArgumentParser()
     arg = parser.add_argument
+    arg('--verbose', help='verbose mode')
     arg('--data-path', help='path to read data from')
     arg('--model-path',help='path to save model to')
     arg('--max-read-num',type=int,default=100000,help='read this much of lines from data-path')
@@ -33,8 +34,6 @@ def main():
     arg('--checkpoint-step', type=int, default=100, help='do validation and save after each this many of steps.')
     arg('--max-step', type=int, default=1000, help='max number of steps')
     args = parser.parse_args()
-
-    is_train = True
 
     '''prepare data'''
     ids_path,vocab_path = data_utils.prepare_data(args.data_path, args.vocab_size)
@@ -57,6 +56,7 @@ def main():
     reverse_dictionary ={w:i for i,w in dictionary.iteritems()}
 
     '''create model'''
+    is_train = True
     model = seq2seq_autoencoder_model.Model(args.vocab_size,
                                             args.embedding_size,
                                             args.state_size,
@@ -67,6 +67,7 @@ def main():
                                             args.cell,
                                             args.optimizer,
                                             args.learning_rate,
+                                            args.verbose,
                                             is_train)
 
     '''fit model'''
