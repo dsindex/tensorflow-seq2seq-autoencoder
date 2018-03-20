@@ -54,6 +54,9 @@ def sentence_to_token_ids(sentence, vocabulary):
         words = basic_tokenizer(sentence)
     return [vocabulary.get(w, UNK_ID) for w in words]
 
+def token_ids_to_sentence(ids, reverse_vocabulary):
+    return [reverse_vocabulary[i] for i in ids]
+
 def data_to_token_ids(data_path, ids_path, vocabulary_path):
     if not gfile.Exists(ids_path):
         print("Tokenizing data in %s" % data_path)

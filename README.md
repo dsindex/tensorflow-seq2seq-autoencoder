@@ -1,9 +1,7 @@
 # forked version of tensorflow-seq2seq-autoencoder for study
   - modified
-    - modified for tensorflow 1.4.0
+    - modify for tensorflow 1.4.0
     - add inference.py
-    - additional comments
-    ![seq2seq_autoencoder](https://raw.githubusercontent.com/dsindex/blog/master/images/seq2seq_autoencoder.jpeg)
   - train
   ```
   * for example, if we have a tokenized corpus `news-sent-morph-100000.txt`.
@@ -20,7 +18,28 @@
   - inference
   ```
   $ CUDA_VISIBLE_DEVICES=7 python inference.py --model-path train --vocab-path data/news-sent-morph-100000.txt.vocab10000.txt --vocab-size=10000 < data/news-sent-morph-100.txt
+  line:
+  박 씨 가 관심 있다 는 거 ㄴ 각양각색 의 펜 과 테이프 , 스티커 등 이 다
+  test_set:
+  [[247, 143, 19, 442, 20, 7, 155, 9, 3, 11, 3, 34, 9819, 14, 3, 43, 5, 6]]
+  encoder_states
+  [[-0.0061004   0.00551304 -0.00506187 -0.01207028 -0.00277947 -0.00397492
+    ...
+    -0.00534251  0.00982479 -0.00800042  0.00298479 -0.00683222 -0.00760455
+   0.00048024  0.00984357]]
+  decoder_outputs
+  [[-0.00091134 -0.01248178 -0.00667217 ...  0.00926949  0.01498884
+    -0.0082592 ]
+   ...
+   [-0.00357277 -0.01344349 -0.00691308 ...  0.00762176  0.0150298
+    -0.00812991]]
+  [3692, 3692, 1468, 8376, 3710, 664, 6804, 2787, 2743, 664, 664, 664, 8197, 1494, 1494, 1494, 1494, 1494, 1494, 1494, 1494, 1494, 8024, 4368, 8838, 8838, 8838, 8838, 8838, 8838, 8838, 8838]
+  out to sentence:
+  불복 불복 구단 유하 죄송 자동차 김인오 넘어가다 작용 자동차 자동차 자동차 빔 회원 회원 회원 회원 회원 회원 회원 회원 회원 밑돌다 터널 알렉스 알렉스 알렉스 알렉스 알렉스 알렉스 알렉스 알렉스
+  ...
   ```
+  - additional comments
+  ![seq2seq_autoencoder](https://raw.githubusercontent.com/dsindex/blog/master/images/seq2seq_autoencoder.jpeg)
 
 ----
 

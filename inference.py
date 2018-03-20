@@ -65,6 +65,8 @@ def main():
             line = line.strip()
             if not line : continue
             start_time = time.time()
+            print 'line:'
+            print line
             # prepare data
             test_set = []
             ids = data_utils.sentence_to_token_ids(line, dictionary)
@@ -76,14 +78,22 @@ def main():
             batch_size = 1
             # do inference
             encoder_states_array, decoder_outputs_array, test_loss = model.inference(test_set, batch_size, session)
+            encoder_states = encoder_states_array[0]
+            decoder_outputs = decoder_outputs_array[0]
             print 'encoder_states'
-            print encoder_states_array[0]
+            print encoder_states
             print 'decoder_outputs'
-            print decoder_outputs_array[0]
+            print decoder_outputs[0]
+            out = []
+            for out_vec in decoder_outputs_array[0][0]: # batch_size = 1
+                out_idx = np.argmax(out_vec)
+                out.append(out_idx)
+            print out
+            print 'out to sentence:'
+            print ' '.join(data_utils.token_ids_to_sentence(out, reverse_dictionary))
             duration_time = time.time() - start_time
-            out = 'duration_time = ' + str(duration_time) + ' sec'
-            sys.stderr.write(out + '\n')
-            break
+            s = 'duration_time = ' + str(duration_time) + ' sec'
+            sys.stderr.write(s + '\n')
             number_of_sent += 1
         sys.stderr.write("number_of_sent = %d\n" % (number_of_sent))
 
