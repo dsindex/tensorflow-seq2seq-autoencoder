@@ -5,11 +5,9 @@ forked version of tensorflow-seq2seq-autoencoder for study
   - modify for tensorflow 1.4.0
   - add inference.py
 
-### setting and data preparation
+### data preparation
 
 ```
-$ export CUDA_VISIBLE_DEVICES=7
-
 * a tokenized corpus `news-sent-morph-100000.txt` for instance.
 * `news-sent-morph-100000.txt` looks like(morph-based tokenized string) :
    ...
@@ -24,13 +22,15 @@ $ export CUDA_VISIBLE_DEVICES=7
 ### train
 
 ```
+$ export CUDA_VISIBLE_DEVICES=7
 $ python train.py --data-path data/news-sent-morph-100000.txt --model-path train --max-step=200000 --vocab-size=50000
 ```
 
 ### inference
 
 ```
-$ python inference.py --model-path train --vocab-path data/news-sent-morph-100000.txt.vocab10000.txt --vocab-size=50000 < data/news-sent-morph-100.txt
+$ export CUDA_VISIBLE_DEVICES=7
+$ python inference.py --model-path train --vocab-path data/news-sent-morph-100000.txt.vocab50000.txt --vocab-size=50000 < data/news-sent-morph-100.txt
 
 line:
 박 씨 가 관심 있다 는 거 ㄴ 각양각색 의 펜 과 테이프 , 스티커 등 이 다
