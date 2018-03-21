@@ -1,21 +1,21 @@
 forked version of tensorflow-seq2seq-autoencoder for study
 ---
 
-### modified
-  - modify for tensorflow 1.4.0
+### description
+  - i made some modification for tensorflow 1.4.0.
   - add inference.py
 
-### data preparation
+### training data format
 
 ```
-* a tokenized corpus `news-sent-morph-100000.txt` for instance.
-* `news-sent-morph-100000.txt` looks like(morph-based tokenized string) :
-   ...
-   슬기 롭다 게 대처 하다 ㄹ 수 있다 는 사람 만 이 승리 하다 ㄹ 수 있다 겠 다
-   3 , 7 , 10 월 생 자신 을 따르다 ㄴ다고 무조건 만나다 거나 경거망동 하다 지 말다 라
-   한순간 의 실수 로 후회 하다 ㄹ 일 생기다 ㄴ다
-   북 , 동쪽 사람 조심 ▶ 소띠 = 친지 간 에 덕이 없다 어 베풀다 고도 원망 만 받다 는다
-   ...
+* a tokenized corpus : news-sent-morph-100000.txt
+
+...
+슬기 롭다 게 대처 하다 ㄹ 수 있다 는 사람 만 이 승리 하다 ㄹ 수 있다 겠 다
+3 , 7 , 10 월 생 자신 을 따르다 ㄴ다고 무조건 만나다 거나 경거망동 하다 지 말다 라
+한순간 의 실수 로 후회 하다 ㄹ 일 생기다 ㄴ다
+북 , 동쪽 사람 조심 ▶ 소띠 = 친지 간 에 덕이 없다 어 베풀다 고도 원망 만 받다 는다
+...
 
 ```
 
@@ -53,7 +53,7 @@ out to sentence:
 ...
 ```
 
-### additional comments
+### comments
 
 ![seq2seq_autoencoder](https://raw.githubusercontent.com/dsindex/blog/master/images/seq2seq_autoencoder.jpeg)
 
