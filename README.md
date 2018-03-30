@@ -22,14 +22,12 @@ forked version of tensorflow-seq2seq-autoencoder for study
 ### train
 
 ```
-$ export CUDA_VISIBLE_DEVICES=7
 $ python train.py --data-path data/news-sent-morph-100000.txt --model-path train --max-step=200000 --vocab-size=50000
 ```
 
 ### inference
 
 ```
-$ export CUDA_VISIBLE_DEVICES=7
 $ python inference.py --model-path train --vocab-path data/news-sent-morph-100000.txt.vocab50000.txt --vocab-size=50000 < data/news-sent-morph-100.txt
 
 line:
